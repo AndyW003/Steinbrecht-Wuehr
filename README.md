@@ -20,15 +20,27 @@ Das Projekt zeigt zentrale Konzepte von Industrie 4.0:
 ## 🚀 Kurzanleitung (Quick Start)
 
 ```bash
-ssh andiarbeit@192.168.137.43
+PC Terminalsteuerung:
+ssh andiarbeit@192.168.137.XXX
 cd smartview
 python3 backend/app.py
+
+XXX: Die IP die der Laptop für den Raspberry PI vergibt
+
+Visual Code:
+zuerst das Remote Paket installieren
+wenn installiert:
+STRG + SHIFT + P
+andiarbeit@192.168.137.XXX oben einfügen
+Passwort: streik26
+Open Folder: smartview und dann backend
+(gegebenenfalls noch Linux als Betriebssystem auswählen)
 ```
 
 Dann im Browser öffnen:
 
 ```
-http://192.168.137.43:5000
+http://192.168.137.XXX:5000
 ```
 
 ---
@@ -119,13 +131,17 @@ Die Weboberfläche zeigt:
 * Zustand des Zylinders
 * Magazinstatus
 * Steuerbuttons (Start, Stopp, Reset)
+* 
+* Betriebsart (Automatikbetrieb/Tippbetrieb)
+* Wertkstück am Ende des Förderbands
 
 
 
 
 
 
-(Screenshot hier einfügen)
+(Screenshot von Website hier einfügen)
+<img width="1157" height="840" alt="image" src="https://github.com/user-attachments/assets/e24fd2c7-7f98-47f0-8f82-bfa9a02fc0a1" />
 
 ---
 
