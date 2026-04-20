@@ -134,10 +134,11 @@ Die Weboberfläche zeigt:
 * Wertkstück am Ende des Förderbands
 
 
-Bild von Startoberfläche, Magzin Voll
+Bild von Startoberfläche, Magzin Voll, Zylinder eingefahren
 <img width="2398" height="1271" alt="image" src="https://github.com/user-attachments/assets/a1df76d9-da60-4d35-ba00-01a6a05d8ba4" />
-<img width="2398" height="1265" alt="image" src="https://github.com/user-attachments/assets/99d20361-5ec8-4ca1-8447-d3c9cdc4a87e" 
+Zylinder ausgefahren und Werkstück auf Förderband
 <img width="2381" height="1266" alt="image" src="https://github.com/user-attachments/assets/14077d6b-a16e-48fe-b2e6-1e3e9db19e75" />
+Fehlermeldung wenn Spannung negativ ist
 <img width="2398" height="1264" alt="image" src="https://github.com/user-attachments/assets/e2e7353e-7d19-48bd-b707-18c2e05e8566" />
 
 
