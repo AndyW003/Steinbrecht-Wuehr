@@ -1,6 +1,7 @@
 [0.1] – Projektstart
 
 -Projektidee festgelegt: SCADA-System mit OPC UA
+
 -Architektur definiert:
 
 Raspberry Pi als Edge Device
