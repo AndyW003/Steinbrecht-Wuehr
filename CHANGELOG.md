@@ -15,28 +15,39 @@ Entwicklungsumgebung vorbereitet
 [0.2] – Raspberry Pi Einrichtung
 
 -Raspberry Pi erfolgreich installiert und gestartet
+
 -Verbindung über SSH eingerichtet
+
 -Netzwerk über Hotspot konfiguriert
+
 -Erste Verbindung vom Laptop zum Raspberry hergestellt
 
 [0.3] – Python Umgebung
 
 -Virtuelle Umgebung (venv) erstellt
+
 -Python-Pakete installiert:
 
 flask
+
 flask-cors
+
 opcua / asyncua
+
 Projektstruktur erstellt:
 
 /backend
 
 [0.4] – Flask Webserver
-Erste Flask-App erstellt
-REST API Endpoint implementiert:
+
+-Erste Flask-App erstellt
+
+-REST API Endpoint implementiert:
 
 GET /api/tags
+
 Testdaten (random Werte) erfolgreich im Browser angezeigt
+
 Raspberry als Webserver im Netzwerk erreichbar gemacht
 
 [0.4.1] – Zwischen Probleme
