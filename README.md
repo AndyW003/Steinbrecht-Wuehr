@@ -20,10 +20,13 @@ Das Projekt zeigt zentrale Konzepte von Industrie 4.0:
 ## 🚀 Kurzanleitung (Quick Start)
 
 ```bash
+Hotspot einschalten von Laptop und mit Raspberry verbinden
 PC Terminalsteuerung:
 ssh andiarbeit@192.168.137.XXX
+Passwort eingeben: streik26
 cd smartview
-python3 backend/app.py
+source venv/bin/active
+python backend/app.py
 
 XXX: Die IP die der Laptop für den Raspberry PI vergibt
 
