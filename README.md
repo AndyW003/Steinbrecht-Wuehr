@@ -143,16 +143,10 @@ Die Weboberfläche zeigt:
 (Screenshot von Website hier einfügen)
 <img width="1157" height="840" alt="image" src="https://github.com/user-attachments/assets/e24fd2c7-7f98-47f0-8f82-bfa9a02fc0a1" />
 
----
-
-
-
-
-
-
-
-
-
+<img width="2398" height="1271" alt="image" src="https://github.com/user-attachments/assets/a1df76d9-da60-4d35-ba00-01a6a05d8ba4" />
+<img width="2398" height="1265" alt="image" src="https://github.com/user-attachments/assets/99d20361-5ec8-4ca1-8447-d3c9cdc4a87e" 
+         <img width="2381" height="1266" alt="image" src="https://github.com/user-attachments/assets/14077d6b-a16e-48fe-b2e6-1e3e9db19e75" />
+         <img width="2398" height="1264" alt="image" src="https://github.com/user-attachments/assets/e2e7353e-7d19-48bd-b707-18c2e05e8566" />
 
 
 ## 👥 Team
@@ -163,8 +157,6 @@ Die Weboberfläche zeigt:
 ---
 
 ## 📄 Lizenz
-
-MIT Lizenz
 
 Copyright (c) 2026 Marius Steinbrecht & Andreas Wühr
 Die Nutzung, Kopie, Veränderung und Weitergabe der Software ist erlaubt, sowohl privat als auch kommerziell.
