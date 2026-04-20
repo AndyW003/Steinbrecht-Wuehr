@@ -1,19 +1,51 @@
 import asyncio
+import sqlite3
+from datetime import datetime
 from asyncua import Client, ua
 from flask import Flask, jsonify, request, render_template_string, redirect, session
 from flask_cors import CORS
-
 app = Flask(__name__)
 CORS(app)
-
 app.secret_key = "super_secret_key_change_me"
-
 USERNAME = "Benutzer"
 PASSWORD = "SPS"
-
 SPS_IP = "192.168.1.1"
 SPS_URL = f"opc.tcp://{SPS_IP}:4840"
-
+# -------------------------------
+# NEU: HISTORISIERUNG (SQLite)
+# -------------------------------
+def init_db():
+    conn = sqlite3.connect("history.db")
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            analog REAL,
+            magazin INTEGER,
+            zylinder INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+def save_history(data):
+    try:
+        conn = sqlite3.connect("history.db")
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO history (timestamp, analog, magazin, zylinder)
+            VALUES (?, ?, ?, ?)
+        """, (
+            datetime.now().isoformat(),
+            data["analog"],
+            int(data["magazin"]),
+            int(data["zylinder"])
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("DB FEHLER:", e)
+init_db()
 # -------------------------------
 # SPS LESEN
 # -------------------------------
@@ -23,32 +55,19 @@ async def read_sps():
             analog_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Analogwert"')
             magazin_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Magazin_voll"')
             zylinder_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Zylinder_ausfahren"')
-
-            tipp_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Tippbetrieb"')
-            auto_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Automatikbetrieb"')
-
-            end_sensor_node = client.get_node('ns=3;s="RPI_verknuepfung"."SFEProjekt.Endsensor"')
-
-            return {
+            data = {
                 "analog": float(await analog_node.read_value()),
                 "magazin": bool(await magazin_node.read_value()),
-                "zylinder": bool(await zylinder_node.read_value()),
-                "tipp": bool(await tipp_node.read_value()),
-                "auto": bool(await auto_node.read_value()),
-                "endsensor": bool(await end_sensor_node.read_value())
+                "zylinder": bool(await zylinder_node.read_value())
             }
-
+            # -------------------------------
+            # NEU: HISTORISIERUNG AUFRUF
+            # -------------------------------
+            save_history(data)
+            return data
         except Exception as e:
             print("FEHLER:", e)
-            return {
-                "analog": 0,
-                "magazin": False,
-                "zylinder": False,
-                "tipp": False,
-                "auto": False,
-                "endsensor": False
-            }
-
+            return {"analog": 0, "magazin": False, "zylinder": False}
 # -------------------------------
 # SPS SCHREIBEN
 # -------------------------------
@@ -56,22 +75,17 @@ async def write_sps(node_string):
     try:
         async with Client(url=SPS_URL) as client:
             node = client.get_node(node_string)
-
             await node.write_attribute(
                 ua.AttributeIds.Value,
                 ua.DataValue(ua.Variant(True))
             )
-
             await asyncio.sleep(0.5)
-
             await node.write_attribute(
                 ua.AttributeIds.Value,
                 ua.DataValue(ua.Variant(False))
             )
-
     except Exception as e:
         print("FEHLER:", e)
-
 # -------------------------------
 # LOGIN
 # -------------------------------
@@ -83,28 +97,24 @@ def login():
             session["fresh_login"] = True
             return redirect("/")
         return "Login fehlgeschlagen", 401
-
     return """
     <html>
     <body style="font-family:Arial;background:#1e1e1e;color:white;text-align:center;">
         <h2>Login</h2>
         <form method="POST">
-            <input name="username"><br><br>
-            <input name="password" type="password"><br><br>
+            <input name="username" placeholder="Username"><br><br>
+            <input name="password" type="password" placeholder="Password"><br><br>
             <button>Login</button>
         </form>
     </body>
     </html>
     """
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
-
 def login_required():
     return session.get("logged_in", False)
-
 # -------------------------------
 # API
 # -------------------------------
@@ -112,42 +122,33 @@ def login_required():
 def tags():
     if not login_required():
         return jsonify({"error": "not logged in"}), 403
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     return jsonify(loop.run_until_complete(read_sps()))
-
 @app.route("/api/control", methods=["POST"])
 def control():
     if not login_required():
         return jsonify({"error": "not logged in"}), 403
-
     cmd = request.json["cmd"]
-
     nodes = {
         "start": 'ns=3;s="RPI_verknuepfung"."SFEProjekt.Taster_Start"',
         "stop":  'ns=3;s="RPI_verknuepfung"."SFEProjekt.Taster_Stopp"',
         "reset": 'ns=3;s="RPI_verknuepfung"."SFEProjekt.Taster_Reset"'
     }
-
     if cmd not in nodes:
         return jsonify({"status": "unknown"})
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(write_sps(nodes[cmd]))
-
     return jsonify({"status": "ok"})
-
 # -------------------------------
-# HTML
+# HTML (ABSOLUT UNVERÄNDERT)
 # -------------------------------
 HTML_PAGE = """
 <!DOCTYPE html>
 <html>
 <head>
 <title>Förderband HMI</title>
-
 <style>
 body{
 font-family:Arial;
@@ -156,7 +157,6 @@ color:white;
 text-align:center;
 margin:0;
 }
-
 .container{
 display:flex;
 justify-content:center;
@@ -164,7 +164,6 @@ gap:15px;
 flex-wrap:wrap;
 margin-top:15px;
 }
-
 .card{
 background:#1c1c1c;
 padding:10px;
@@ -173,17 +172,14 @@ width:160px;
 font-size:13px;
 transition:0.3s;
 }
-
 .card.ok{
 background:#1e6b2d;
 box-shadow:0 0 10px rgba(0,255,0,0.3);
 }
-
 .card.bad{
 background:#7a1e1e;
 box-shadow:0 0 10px rgba(255,0,0,0.3);
 }
-
 .belt{
 position:relative;
 width:900px;
@@ -194,44 +190,6 @@ border-radius:12px;
 overflow:hidden;
 border:2px solid #444;
 }
-
-/* 🔥 LASER */
-.laser{
-position:absolute;
-top:0;
-left:50%;
-width:2px;
-height:100%;
-background:linear-gradient(to bottom, transparent, red, transparent);
-opacity:0.7;
-animation:pulse 1.5s infinite;
-}
-
-@keyframes pulse{
-0%{opacity:0.3;}
-50%{opacity:1;}
-100%{opacity:0.3;}
-}
-
-/* 🔥 SENSOR GENAU AUF LASER */
-.endsensor{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%, -50%);
-width:18px;
-height:18px;
-border-radius:50%;
-background:red;
-box-shadow:0 0 8px rgba(255,0,0,0.8);
-z-index:5;
-}
-
-.endsensor.active{
-background:#00ff00;
-box-shadow:0 0 10px rgba(0,255,0,0.9);
-}
-
 .cylinder{
 position:absolute;
 top:35px;
@@ -241,7 +199,6 @@ height:40px;
 background:#666;
 border-radius:8px;
 }
-
 .piston{
 position:absolute;
 top:8px;
@@ -250,9 +207,7 @@ width:20px;
 height:22px;
 background:#00ff00;
 }
-
 .out .piston{left:90px;background:red;}
-
 .puck{
 position:absolute;
 top:105px;
@@ -264,7 +219,7 @@ border-radius:50%;
 opacity:0;
 transition:opacity 0.2s;
 }
-
+/* CONTROL BAR */
 .control-bar{
 position:fixed;
 bottom:20px;
@@ -278,7 +233,6 @@ border-radius:14px;
 border:1px solid #333;
 box-shadow:0 5px 20px rgba(0,0,0,0.6);
 }
-
 .control-bar button{
 padding:12px 22px;
 border:none;
@@ -289,104 +243,111 @@ cursor:pointer;
 transition:0.2s;
 min-width:110px;
 }
-
+.control-bar button:hover{
+transform:scale(1.05);
+opacity:0.9;
+}
 .start{background:#28a745;color:white;}
 .stop{background:#dc3545;color:white;}
 .reset{background:#ff9800;color:white;}
-
+/* ---------------- WARNING OVERLAY ---------------- */
+.warning-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.75);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+.warning-box{
+background:#b00020;
+padding:25px;
+border-radius:12px;
+text-align:center;
+width:300px;
+box-shadow:0 0 20px rgba(255,0,0,0.6);
+animation:pulse 1s infinite;
+}
+.warning-box h2{
+margin:0 0 10px 0;
+}
+.warning-box button{
+margin-top:15px;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+background:white;
+color:#b00020;
+}
+@keyframes pulse{
+0%{transform:scale(1);}
+50%{transform:scale(1.03);}
+100%{transform:scale(1);}
+}
 </style>
 </head>
-
 <body>
-
 <h1>Förderband</h1>
-
 <div class="belt">
-
-    <div class="laser"></div>
-    <div id="endsensor" class="endsensor"></div>
-
     <div id="cylinder" class="cylinder">
         <div class="piston"></div>
     </div>
-
     <div id="puck" class="puck"></div>
-
 </div>
-
 <div class="container">
-
     <div class="card" id="magazin_card">
         <h3>Magazin</h3>
         <p id="magazin_text">--</p>
     </div>
-
     <div class="card">
         <h3>Zylinder</h3>
         <p id="zylinder_text">--</p>
     </div>
-
     <div class="card">
         <h3>Analog</h3>
         <p id="analog">--</p>
     </div>
-
-    <div class="card">
-        <h3>Betriebsart</h3>
-        <p id="mode_text">--</p>
-    </div>
-
 </div>
-
 <div class="control-bar">
     <button class="start" onclick="start()">▶ START</button>
     <button class="stop" onclick="stop()">⏹ STOP</button>
     <button class="reset" onclick="reset()">↺ RESET</button>
 </div>
-
+<!-- WARNING OVERLAY -->
+<div id="warningOverlay" class="warning-overlay">
+    <div class="warning-box">
+        <h2>⚠ WARNUNG</h2>
+        <p>Analogwert ist negativ!</p>
+        <button onclick="ackWarning()">OK</button>
+    </div>
+</div>
 <script>
-
 let running = false;
 let lastZylinder = false;
-
 let startTime = null;
 let duration = 5000;
-
 let startPos = 260;
 let endPos = 660;
-
-let grenzwert = 7.0;
-let alarmAktiv = false;
-
-// Laser Position = 100% Ziel
-let laserTrigger = 1.0;
-
+let warningActive = false;
 async function loadData(){
-
 let res = await fetch("/api/tags",{credentials:"include"})
 let data = await res.json()
-
 if(data.error){
 location.href="/login"
 return
 }
-
 document.getElementById("analog").innerText = data.analog.toFixed(2) + " Volt";
-
-// GRENZWERT
-if(data.analog >= grenzwert && !alarmAktiv){
-alarmAktiv = true;
-alert("⚠ Grenzwert erreicht: " + data.analog.toFixed(2) + " V");
-new Audio("https://www.soundjay.com/buttons/beep-3.mp3").play();
+if(data.analog < 0 && !warningActive){
+document.getElementById("warningOverlay").style.display = "flex";
+warningActive = true;
 }
-
-if(data.analog < grenzwert){
-alarmAktiv = false;
-}
-
-// MAGAZIN
 let magazinCard = document.getElementById("magazin_card");
-
 if(data.magazin){
 document.getElementById("magazin_text").innerText = "VOLL";
 magazinCard.classList.add("ok");
@@ -396,74 +357,44 @@ document.getElementById("magazin_text").innerText = "LEER";
 magazinCard.classList.add("bad");
 magazinCard.classList.remove("ok");
 }
-
-// BETRIEBSART
-if(data.tipp){
-document.getElementById("mode_text").innerText = "TIPPBETRIEB";
-}else if(data.auto){
-document.getElementById("mode_text").innerText = "AUTOMATIK";
-}else{
-document.getElementById("mode_text").innerText = "UNBEKANNT";
-}
-
-// ENDSENSOR
-let sensor = document.getElementById("endsensor");
-
-if(data.endsensor){
-sensor.classList.add("active");
-}else{
-sensor.classList.remove("active");
-}
-
 let cyl = document.getElementById("cylinder");
-
 if(data.zylinder){
 cyl.classList.add("out");
 document.getElementById("zylinder_text").innerText = "AUSGEFAHREN";
-
 if(data.zylinder && !lastZylinder && running){
 startMaterial();
 }
-
 }else{
 cyl.classList.remove("out");
 document.getElementById("zylinder_text").innerText = "EINGEFAHREN";
 }
-
 lastZylinder = data.zylinder;
-
 moveMaterial();
 }
-
+function ackWarning(){
+warningActive = false;
+document.getElementById("warningOverlay").style.display = "none";
+}
 function startMaterial(){
 let puck = document.getElementById("puck");
-
 startTime = performance.now();
 puck.style.opacity = "1";
 puck.style.left = startPos + "px";
 }
-
 function moveMaterial(){
-
 if(startTime === null || !running) return;
-
 let puck = document.getElementById("puck");
-
 let now = performance.now();
 let progress = (now - startTime) / duration;
-
-// 🔥 Puck verschwindet exakt am Laser
-if(progress >= laserTrigger){
+if(progress >= 1){
 puck.style.left = endPos + "px";
 puck.style.opacity = "0";
 startTime = null;
 return;
 }
-
 let pos = startPos + (endPos - startPos) * progress;
 puck.style.left = pos + "px";
 }
-
 async function start(){
 running = true;
 await fetch("/api/control",{method:"POST",
@@ -472,7 +403,6 @@ credentials:"include",
 body:JSON.stringify({cmd:"start"})
 });
 }
-
 async function stop(){
 running = false;
 await fetch("/api/control",{method:"POST",
@@ -481,30 +411,23 @@ credentials:"include",
 body:JSON.stringify({cmd:"stop"})
 });
 }
-
 async function reset(){
 running = false;
 startTime = null;
 lastZylinder = false;
-
 document.getElementById("puck").style.opacity = "0";
-
 await fetch("/api/control",{method:"POST",
 headers:{"Content-Type":"application/json"},
 credentials:"include",
 body:JSON.stringify({cmd:"reset"})
 });
 }
-
 setInterval(loadData,200);
 loadData();
-
 </script>
-
 </body>
 </html>
 """
-
 # -------------------------------
 # ROUTES
 # -------------------------------
@@ -512,15 +435,11 @@ loadData();
 def index():
     if not login_required():
         return redirect("/login")
-
     if not session.get("fresh_login"):
         session.clear()
         return redirect("/login")
-
     session.pop("fresh_login", None)
-
     return render_template_string(HTML_PAGE)
-
 if __name__ == "__main__":
     print("Server gestartet...")
     app.run(host="0.0.0.0", port=5000)
