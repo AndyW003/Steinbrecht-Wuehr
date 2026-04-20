@@ -5,8 +5,11 @@
 -Architektur definiert:
 
 Raspberry Pi als Edge Device
+
 SPS als Datenquelle
+
 Webserver zur Visualisierung
+
 Entwicklungsumgebung vorbereitet
 
 [0.2] – Raspberry Pi Einrichtung
