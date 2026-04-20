@@ -1,6 +1,7 @@
 [0.1] – Projektstart
-Projektidee festgelegt: SCADA-System mit OPC UA
-Architektur definiert:
+
+-Projektidee festgelegt: SCADA-System mit OPC UA
+-Architektur definiert:
 
 Raspberry Pi als Edge Device
 SPS als Datenquelle
@@ -8,14 +9,16 @@ Webserver zur Visualisierung
 Entwicklungsumgebung vorbereitet
 
 [0.2] – Raspberry Pi Einrichtung
-Raspberry Pi erfolgreich installiert und gestartet
-Verbindung über SSH eingerichtet
-Netzwerk über Hotspot konfiguriert
-Erste Verbindung vom Laptop zum Raspberry hergestellt
+
+-Raspberry Pi erfolgreich installiert und gestartet
+-Verbindung über SSH eingerichtet
+-Netzwerk über Hotspot konfiguriert
+-Erste Verbindung vom Laptop zum Raspberry hergestellt
 
 [0.3] – Python Umgebung
-Virtuelle Umgebung (venv) erstellt
-Python-Pakete installiert:
+
+-Virtuelle Umgebung (venv) erstellt
+-Python-Pakete installiert:
 
 flask
 flask-cors
